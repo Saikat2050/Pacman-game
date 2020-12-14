@@ -1,0 +1,502 @@
+
+import pygame
+
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 576
+
+# Define some colors
+BLACK = (0,0,0)
+WHITE = (255,255,255)
+
+class Player(pygame.sprite.Sprite):
+    change_x = 0
+    change_y = 0
+    explosion = False
+    game_over = False
+    def __init__(self,x,y,filename):
+        # Call the parent class (sprite) constructor
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.image.load(filename).convert()
+        self.image.set_colorkey(BLACK)
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (x,y)
+        # Load image which will be for the animation
+        img = pygame.image.load("walk.png").convert()
+        # Create the animations objects
+        self.move_right_animation = Animation(img,32,32)
+        self.move_left_animation = Animation(pygame.transform.flip(img,True,False),32,32)
+        self.move_up_animation = Animation(pygame.transform.rotate(img,90),32,32)
+        self.move_down_animation = Animation(pygame.transform.rotate(img,270),32,32)
+        # Load explosion image
+        img = pygame.image.load("explosion.png").convert()
+        self.explosion_animation = Animation(img,30,30)
+        # Save the player image
+        self.player_image = pygame.image.load(filename).convert()
+        self.player_image.set_colorkey(BLACK)
+
+    def update(self,horizontal_blocks,vertical_blocks):
+        if not self.explosion:
+            if self.rect.right &lt; 0:
+                self.rect.left = SCREEN_WIDTH
+            elif self.rect.left > SCREEN_WIDTH:
+                self.rect.right = 0
+            if self.rect.bottom &lt; 0:
+                self.rect.top = SCREEN_HEIGHT
+            elif self.rect.top > SCREEN_HEIGHT:
+                self.rect.bottom = 0
+            self.rect.x += self.change_x
+            self.rect.y += self.change_y
+
+            # This will stop the user for go up or down when it is inside of the box
+
+            for block in pygame.sprite.spritecollide(self,horizontal_blocks,False):
+                self.rect.centery = block.rect.centery
+                self.change_y = 0
+            for block in pygame.sprite.spritecollide(self,vertical_blocks,False):
+                self.rect.centerx = block.rect.centerx
+                self.change_x = 0
+
+            # This will cause the animation to start
+            
+            if self.change_x > 0:
+                self.move_right_animation.update(10)
+                self.image = self.move_right_animation.get_current_image()
+            elif self.change_x &lt; 0:
+                self.move_left_animation.update(10)
+                self.image = self.move_left_animation.get_current_image()
+
+            if self.change_y > 0:
+                self.move_down_animation.update(10)
+                self.image = self.move_down_animation.get_current_image()
+            elif self.change_y &lt; 0:
+                self.move_up_animation.update(10)
+                self.image = self.move_up_animation.get_current_image()
+        else:
+            if self.explosion_animation.index == self.explosion_animation.get_length() -1:
+                pygame.time.wait(500)
+                self.game_over = True
+            self.explosion_animation.update(12)
+            self.image = self.explosion_animation.get_current_image()
+            
+
+    def move_right(self):
+        self.change_x = 3
+
+    def move_left(self):
+        self.change_x = -3
+
+    def move_up(self):
+        self.change_y = -3
+
+    def move_down(self):
+        self.change_y = 3
+
+    def stop_move_right(self):
+        if self.change_x != 0:
+            self.image = self.player_image
+        self.change_x = 0
+
+    def stop_move_left(self):
+        if self.change_x != 0:
+            self.image = pygame.transform.flip(self.player_image,True,False)
+        self.change_x = 0
+
+    def stop_move_up(self):
+        if self.change_y != 0:
+            self.image = pygame.transform.rotate(self.player_image,90)
+        self.change_y = 0
+
+    def stop_move_down(self):
+        if self.change_y != 0:
+            self.image = pygame.transform.rotate(self.player_image,270)
+        self.change_y = 0
+
+
+
+class Animation(object):
+    def __init__(self,img,width,height):
+        # Load the sprite sheet
+        self.sprite_sheet = img
+        # Create a list to store the images
+        self.image_list = &#91;]
+        self.load_images(width,height)
+        # Create a variable which will hold the current image of the list
+        self.index = 0
+        # Create a variable that will hold the time
+        self.clock = 1
+        
+    def load_images(self,width,height):
+        # Go through every single image in the sprite sheet
+        for y in range(0,self.sprite_sheet.get_height(),height):
+            for x in range(0,self.sprite_sheet.get_width(),width): 
+                # load images into a list
+                img = self.get_image(x,y,width,height)
+                self.image_list.append(img)
+
+    def get_image(self,x,y,width,height):
+        # Create a new blank image
+        image = pygame.Surface(&#91;width,height]).convert()
+        # Copy the sprite from the large sheet onto the smaller
+        image.blit(self.sprite_sheet,(0,0),(x,y,width,height))
+        # Assuming black works as the transparent color
+        image.set_colorkey((0,0,0))
+        # Return the image
+        return image
+
+    def get_current_image(self):
+        return self.image_list&#91;self.index]
+
+    def get_length(self):
+        return len(self.image_list)
+
+    def update(self,fps=30):
+        step = 30 // fps
+        l = range(1,30,step)
+        if self.clock == 30:
+            self.clock = 1
+        else:
+            self.clock += 1
+
+        if self.clock in l:
+            # Increase index
+            self.index += 1
+            if self.index == len(self.image_list):
+                self.index = 0
+
+            
+    
+        
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+import pygame
+ 
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 576
+ 
+# Define some colors
+BLACK = (0,0,0)
+WHITE = (255,255,255)
+ 
+class Player(pygame.sprite.Sprite):
+    change_x = 0
+    change_y = 0
+    explosion = False
+    game_over = False
+    def __init__(self,x,y,filename):
+        # Call the parent class (sprite) constructor
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.image.load(filename).convert()
+        self.image.set_colorkey(BLACK)
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (x,y)
+        # Load image which will be for the animation
+        img = pygame.image.load("walk.png").convert()
+        # Create the animations objects
+        self.move_right_animation = Animation(img,32,32)
+        self.move_left_animation = Animation(pygame.transform.flip(img,True,False),32,32)
+        self.move_up_animation = Animation(pygame.transform.rotate(img,90),32,32)
+        self.move_down_animation = Animation(pygame.transform.rotate(img,270),32,32)
+        # Load explosion image
+        img = pygame.image.load("explosion.png").convert()
+        self.explosion_animation = Animation(img,30,30)
+        # Save the player image
+        self.player_image = pygame.image.load(filename).convert()
+        self.player_image.set_colorkey(BLACK)
+ 
+    def update(self,horizontal_blocks,vertical_blocks):
+        if not self.explosion:
+            if self.rect.right &lt; 0:
+                self.rect.left = SCREEN_WIDTH
+            elif self.rect.left > SCREEN_WIDTH:
+                self.rect.right = 0
+            if self.rect.bottom &lt; 0:
+                self.rect.top = SCREEN_HEIGHT
+            elif self.rect.top > SCREEN_HEIGHT:
+                self.rect.bottom = 0
+            self.rect.x += self.change_x
+            self.rect.y += self.change_y
+ 
+            # This will stop the user for go up or down when it is inside of the box
+ 
+            for block in pygame.sprite.spritecollide(self,horizontal_blocks,False):
+                self.rect.centery = block.rect.centery
+                self.change_y = 0
+            for block in pygame.sprite.spritecollide(self,vertical_blocks,False):
+                self.rect.centerx = block.rect.centerx
+                self.change_x = 0
+ 
+            # This will cause the animation to start
+            
+            if self.change_x > 0:
+                self.move_right_animation.update(10)
+                self.image = self.move_right_animation.get_current_image()
+            elif self.change_x &lt; 0:
+                self.move_left_animation.update(10)
+                self.image = self.move_left_animation.get_current_image()
+ 
+            if self.change_y > 0:
+                self.move_down_animation.update(10)
+                self.image = self.move_down_animation.get_current_image()
+            elif self.change_y &lt; 0:
+                self.move_up_animation.update(10)
+                self.image = self.move_up_animation.get_current_image()
+        else:
+            if self.explosion_animation.index == self.explosion_animation.get_length() -1:
+                pygame.time.wait(500)
+                self.game_over = True
+            self.explosion_animation.update(12)
+            self.image = self.explosion_animation.get_current_image()
+            
+ 
+    def move_right(self):
+        self.change_x = 3
+ 
+    def move_left(self):
+        self.change_x = -3
+ 
+    def move_up(self):
+        self.change_y = -3
+ 
+    def move_down(self):
+        self.change_y = 3
+ 
+    def stop_move_right(self):
+        if self.change_x != 0:
+            self.image = self.player_image
+        self.change_x = 0
+ 
+    def stop_move_left(self):
+        if self.change_x != 0:
+            self.image = pygame.transform.flip(self.player_image,True,False)
+        self.change_x = 0
+ 
+    def stop_move_up(self):
+        if self.change_y != 0:
+            self.image = pygame.transform.rotate(self.player_image,90)
+        self.change_y = 0
+ 
+    def stop_move_down(self):
+        if self.change_y != 0:
+            self.image = pygame.transform.rotate(self.player_image,270)
+        self.change_y = 0
+ 
+ 
+ 
+class Animation(object):
+    def __init__(self,img,width,height):
+        # Load the sprite sheet
+        self.sprite_sheet = img
+        # Create a list to store the images
+        self.image_list = &#91;]
+        self.load_images(width,height)
+        # Create a variable which will hold the current image of the list
+        self.index = 0
+        # Create a variable that will hold the time
+        self.clock = 1
+        
+    def load_images(self,width,height):
+        # Go through every single image in the sprite sheet
+        for y in range(0,self.sprite_sheet.get_height(),height):
+            for x in range(0,self.sprite_sheet.get_width(),width):
+                # load images into a list
+                img = self.get_image(x,y,width,height)
+                self.image_list.append(img)
+ 
+    def get_image(self,x,y,width,height):
+        # Create a new blank image
+        image = pygame.Surface(&#91;width,height]).convert()
+        # Copy the sprite from the large sheet onto the smaller
+        image.blit(self.sprite_sheet,(0,0),(x,y,width,height))
+        # Assuming black works as the transparent color
+        image.set_colorkey((0,0,0))
+        # Return the image
+        return image
+ 
+    def get_current_image(self):
+        return self.image_list&#91;self.index]
+ 
+    def get_length(self):
+        return len(self.image_list)
+ 
+    def update(self,fps=30):
+        step = 30 // fps
+        l = range(1,30,step)
+        if self.clock == 30:
+            self.clock = 1
+        else:
+            self.clock += 1
+ 
+        if self.clock in l:
+            # Increase index
+            self.index += 1
+            if self.index == len(self.image_list):
+                self.index = 0
+ 
+            
